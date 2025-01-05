@@ -1,11 +1,9 @@
-﻿using System.Runtime.InteropServices;
-using BrowseRouter.Interop.Win32;
+﻿using BrowseRouter.Interop.Win32;
 
 namespace BrowseRouter;
 
 public static class Program
 {
-
   private static async Task Main(string[] args)
   {
     Kernel32.AttachToParentConsole();
@@ -16,14 +14,35 @@ public static class Program
       return;
     }
 
+    (string passThroughArgs, args) = GetPassthru(args);
+
     // Process each URL in the arguments list.
     foreach (string arg in args)
     {
-      await RunAsync(arg.Trim());
+      await RunAsync(arg.Trim(), passThroughArgs);
     }
   }
 
-  private static async Task RunAsync(string arg)
+  private static (string passThroughArgs, string[] remainder) GetPassthru(string[] args)
+  {
+    const string flag = "--passthru";
+
+    bool hasFlag = args.Any(arg => arg == flag);
+
+    if (!hasFlag)
+      return ("", args);
+
+    // Get all text between the first "--passthru" and the next "-"
+    // e.g. "--passthru arg1 arg2 --flag" => "arg1 arg2"
+    string[] passthruArgs = args
+      .SkipWhile(a => a != flag).Skip(1)
+      .TakeWhile(a => !a.StartsWith("-"))
+      .ToArray();
+
+      return (string.Join(" ", passthruArgs), args.TakeWhile(a => a != flag).ToArray());
+  }
+
+  private static async Task RunAsync(string arg, string passThroughArgs)
   {
     Func<bool> getIsOption = () => arg.StartsWith('-') || arg.StartsWith('/');
 
@@ -39,7 +58,7 @@ public static class Program
       return;
     }
 
-    await LaunchUrlAsyc(arg);
+    await LaunchUrlAsyc(arg, passThroughArgs);
   }
 
   private static async Task<bool> RunOption(string arg)
@@ -65,7 +84,7 @@ public static class Program
     return false;
   }
 
-  private static async Task LaunchUrlAsyc(string url)
+  private static async Task LaunchUrlAsyc(string url, string passThroughArgs)
   {
     // Get the window title for whichever application is opening the URL.
     string windowTitle = User32.GetActiveWindowTitle();
@@ -80,7 +99,7 @@ public static class Program
       false => new EmptyNotifyService()
     };
 
-    await new BrowserService(configService, notifier).LaunchAsync(url, windowTitle);
+    await new BrowserService(configService, notifier).LaunchAsync(url, windowTitle, passThroughArgs);
   }
 
   private static void ShowHelp()

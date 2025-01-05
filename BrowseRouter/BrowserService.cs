@@ -1,11 +1,10 @@
 ﻿using System.Diagnostics;
-using System.Text;
 
 namespace BrowseRouter;
 
 public class BrowserService(IConfigService config, INotifyService notifier)
 {
-  public async Task LaunchAsync(string url, string windowTitle)
+  public async Task LaunchAsync(string url, string windowTitle, string passThroughArgs)
   {
     try
     {
@@ -37,6 +36,7 @@ public class BrowserService(IConfigService config, INotifyService notifier)
       (string path, string args) = Args.SplitPathAndArgs(pref.Browser.Location);
 
       args = Args.Format(args, uri);
+      args += passThroughArgs;
 
       Log.Write($"Launching {path} with args \"{args}\"");
 

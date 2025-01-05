@@ -38,6 +38,10 @@
     "open multiple URLs": {
       "commandName": "Project",
       "commandLineArgs": "example.org example.com"
+    },
+    "passthru": {
+      "commandName": "Project",
+      "commandLineArgs": "https://example.com/ --passthru Lorem ipsum dolor sit amet"
     }
   }
 }
